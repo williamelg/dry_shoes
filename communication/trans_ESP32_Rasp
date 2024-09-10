@@ -1,0 +1,153 @@
+#include <HardwareSerial.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
+
+HardwareSerial SerialPort(2);
+const char* ssid = "Freebox-04A6AA";
+const char* password = "rogitem.9-erarii4-stigias3-quadrigas";
+
+const char* serverIP = "192.168.1.127"; // Adresse IP de la Raspberry Pi (serveur Flask)
+const int serverPort = 5000; // Port du serveur Flask
+
+void setup(){
+  SerialPort.begin(115200, SERIAL_8N1,16,17);
+  Serial.begin(9600);
+
+  // Connecter l'ESP32 au réseau Wi-Fi
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connexion au réseau Wi-Fi...");
+  }
+  Serial.println("Connecté au réseau Wi-Fi !");
+
+}
+
+void loop() {
+  if (SerialPort.available()){
+    String stmData = SerialPort.readString();
+    
+    int battery1 = stmData.substring(0,4).toInt();
+    int battery2 = stmData.substring(4,8).toInt();
+    int battery3 = stmData.substring(8,12).toInt();
+    int battery4 = stmData.substring(12,16).toInt();
+    float temperatureAmbiant = stmData.substring(16,20).toFloat();
+    float humiditeAmbiant = stmData.substring(20,24).toFloat();
+    float temperatureChaussure = stmData.substring(24,28).toFloat();
+    float humiditeChaussure = stmData.substring(28,32).toFloat();
+    Serial.print(humiditeChaussure);
+     // Mettre à jour les valeurs de batterie
+   // Mettre à jour les valeurs de batterie
+  sendPostRequest("/api/batterie/1", battery1);
+  sendPostRequest("/api/batterie/2", battery2);
+  sendPostRequest("/api/batterie/3", battery3);
+  sendPostRequest("/api/batterie/4", battery4);
+
+  // Mettre à jour la température de l'ambiant
+  sendPostRequest_1("/api/ambiant/temperature", temperatureAmbiant);
+
+  // Mettre à jour l'humidité de l'ambiant
+  sendPostRequest_2("/api/ambiant/humidite", humiditeAmbiant);
+
+  // Mettre à jour la température de la chaussure
+  sendPostRequest_1("/api/chaussure/temperature", temperatureChaussure);
+
+  // Mettre à jour l'humidité de la chaussure
+  sendPostRequest_2("/api/chaussure/humidite", humiditeChaussure);
+
+  }
+}
+
+void sendPostRequest_1(const char* endpoint, int data) {
+  WiFiClient client;
+  HTTPClient http;
+
+  // Construire l'URL de la requête POST
+  String url = "http://" + String(serverIP) + ":" + String(serverPort) + endpoint;
+
+  // Effectuer la requête POST
+  http.begin(client, url);
+  http.addHeader("Content-Type", "application/json");
+
+  // Construire le corps de la requête en format JSON
+  String payload = "{\"temperature\":" + String(data) + "}";
+
+  int httpResponseCode = http.sendRequest("POST", payload);
+
+  // Vérifier le code de réponse HTTP
+  if (httpResponseCode > 0) {
+    Serial.println("Requête POST envoyée avec succès !");
+    Serial.print("Code de réponse HTTP : ");
+    Serial.println(httpResponseCode);
+  } else {
+    Serial.println("Erreur lors de l'envoi de la requête POST !");
+    Serial.print("Code d'erreur HTTP : ");
+    Serial.println(httpResponseCode);
+  }
+
+  // Libérer les ressources
+  http.end();
+}
+
+void sendPostRequest(const char* endpoint, int data) {
+  WiFiClient client;
+  HTTPClient http;
+
+  // Construire l'URL de la requête POST
+  String url = "http://" + String(serverIP) + ":" + String(serverPort) + endpoint;
+
+  // Effectuer la requête POST
+  http.begin(client, url);
+  http.addHeader("Content-Type", "application/json");
+
+  // Construire le corps de la requête en format JSON
+  String payload = "{\"valeur\":" + String(data) + "}";
+
+  int httpResponseCode = http.sendRequest("POST", payload);
+
+  // Vérifier le code de réponse HTTP
+  if (httpResponseCode > 0) {
+    Serial.println("Requête POST envoyée avec succès !");
+    Serial.print("Code de réponse HTTP : ");
+    Serial.println(httpResponseCode);
+  } else {
+    Serial.println("Erreur lors de l'envoi de la requête POST !");
+    Serial.print("Code d'erreur HTTP : ");
+    Serial.println(httpResponseCode);
+  }
+
+  // Libérer les ressources
+  http.end();
+}
+
+void sendPostRequest_2(const char* endpoint, int data) {
+  WiFiClient client;
+  HTTPClient http;
+
+  // Construire l'URL de la requête POST
+  String url = "http://" + String(serverIP) + ":" + String(serverPort) + endpoint;
+
+  // Effectuer la requête POST
+  http.begin(client, url);
+  http.addHeader("Content-Type", "application/json");
+
+  // Construire le corps de la requête en format JSON
+  String payload = "{\"humidite\":" + String(data) + "}";
+
+  int httpResponseCode = http.sendRequest("POST", payload);
+
+  // Vérifier le code de réponse HTTP
+  if (httpResponseCode > 0) {
+    Serial.println("Requête POST envoyée avec succès !");
+    Serial.print("Code de réponse HTTP : ");
+    Serial.println(httpResponseCode);
+  } else {
+    Serial.println("Erreur lors de l'envoi de la requête POST !");
+    Serial.print("Code d'erreur HTTP : ");
+    Serial.println(httpResponseCode);
+  }
+
+  // Libérer les ressources
+  http.end();
+}
+
