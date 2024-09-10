@@ -1,0 +1,136 @@
+/**********************************************************************
+   ESP_LEDs
+   Contrôle de 3 LEDs au moyen d'une page Web.
+   ESP8266 ou ESP32
+   https://electroniqueamateur.blogspot.com/2019/08/piloter-des-leds-par-wifi-esp32-esp8266.html
+***********************************************************************/
+
+// inclusion des bibliothèques utiles
+// pour la communication WiFi
+#if defined ARDUINO_ARCH_ESP8266  // s'il s'agit d'un ESP8266
+#include <ESP8266WiFi.h>
+#include <ESP8266WebServer.h>
+#elif defined ARDUINO_ARCH_ESP32  // s'il s'agit d'un ESP32
+#include "WiFi.h"
+#include <WebServer.h>
+#endif
+
+#include <WiFiClient.h>
+
+// modifiez ces deux constantes pour qu'elles contiennent les caractéristiques de
+// votre réseau Wifi
+#define ssid      "**********"       // le nom (SSID) de votre réseau WiFi
+#define password  "**********"  // votre mot de passe WiFi
+
+// les LEDs sont reliées aux broches GPIO 2, 4 et 5 de l'ESP
+#define brocheLED1  2
+#define brocheLED2  4
+#define brocheLED3  5
+
+#if defined ARDUINO_ARCH_ESP8266  // s'il s'agit d'un ESP8266
+ESP8266WebServer server(80);
+#elif defined ARDUINO_ARCH_ESP32  // s'il s'agit d'un ESP32
+WebServer server(80);
+#endif
+
+// Les 3 variables indiquant l'état des LEDs
+// ce sont des strings, puisque leur contenu provient des boutons radio de la page web
+int etatLED1 = 0;  // peut prendre les valeurs 0 (éteinte) ou 1 (allumée)
+int etatLED2 = 0;  // peut prendre les valeurs 0 (éteinte) ou 1 (allumée)
+int etatLED3 = 0;  // peut prendre les valeurs 0 (éteinte) ou 1 (allumée)
+
+
+/* La fonction construitPage retourne un string qui contient toute notre page web  */
+
+String construitPage() {
+
+  String bouton1Str, bouton2Str, bouton3Str;
+
+  // pour que le bouton soit coché si la LED est allumée
+  if (etatLED1 == 1) {
+    bouton1Str = "checked";
+  }
+  if (etatLED2 == 1) {
+    bouton2Str = "checked";
+  }
+  if (etatLED3 == 1) {
+    bouton3Str = "checked";
+  }
+
+  String page = "<html lang=fr-FR><head>";
+  page += "<title>LEDs (ESP8266 et ESP32)</title>";
+  page += "<style> body { background-color: #fffff; font-family: Arial, Helvetica, Sans-Serif; Color: #000088; }</style>";
+  page += "</head><body><h1>LEDs (ESP8266 et ESP32)</h1>";
+  page += "<form action='/' method='POST'>";
+  page += "<p><INPUT type='checkbox' name='LED1' value='1' " + bouton1Str + ">LED 1 &nbsp; &nbsp; &nbsp;";
+  page += "<INPUT type='checkbox' name='LED2' value='1' " + bouton2Str + ">LED 2 &nbsp; &nbsp; &nbsp;";
+  page += "<INPUT type='checkbox' name='LED3' value='1' " + bouton3Str + ">LED 3</p>";
+  page += "<INPUT type='submit' value='Appliquer'><br><br>";
+  page += "</body></html>";
+  return page;
+
+}
+
+/*  La fonction gestionPage modifie l'état des LEDs
+   quand le bouton Appliquer a été cliqué. */
+void gestionPage() {
+
+    etatLED1 = server.hasArg("LED1");
+    etatLED2 = server.hasArg("LED2");
+    etatLED3 = server.hasArg("LED3");
+
+    // pour faciliter le débogage:
+    Serial.print("Commande recue.  LED 1: ");
+    Serial.print(etatLED1);
+    Serial.print("   LED2:  ");
+    Serial.print(etatLED2);
+    Serial.print("   LED3:  ");
+    Serial.println(etatLED3);
+
+    gestionLEDs();
+
+    server.send ( 200, "text/html", construitPage() );
+ 
+}
+
+/* Contrôle des LEDS par les broches GPIO2, GPIO4 et GPIO5 */
+void gestionLEDs() {
+    digitalWrite(brocheLED1, etatLED1);
+    digitalWrite(brocheLED2, etatLED2);
+    digitalWrite(brocheLED3, etatLED3);
+}
+
+void setup() {
+  // broches auxquelles sont branchées les LEDs
+  pinMode(brocheLED1, OUTPUT);
+  pinMode(brocheLED2, OUTPUT);
+  pinMode(brocheLED3, OUTPUT);
+
+  // pour affichage dans le moniteur série
+  Serial.begin ( 115200 );
+
+  Serial.println("");
+
+  WiFi.mode(WIFI_STA);
+
+  // initialisation de la communication WiFi
+  WiFi.begin ( ssid, password );
+  while ( WiFi.status() != WL_CONNECTED ) {
+    delay ( 500 ); Serial.print ( "." );
+  }
+  Serial.println ( "" );
+  Serial.print ( "Maintenant connecte a " );
+  Serial.println ( ssid );
+  Serial.print ( "Adresse IP: " );
+  Serial.println ( WiFi.localIP() );
+
+  // On indique le nom de la fonction qui gère l'interraction avec la page web
+  server.on ( "/",  gestionPage );
+
+  server.begin();
+  Serial.println ( "Serveur HTTP en fonction" );
+}
+
+void loop() {
+  server.handleClient();
+}
