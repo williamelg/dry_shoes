@@ -1,0 +1,174 @@
+from flask import Flask, jsonify, request, render_template
+from flask_sqlalchemy import SQLAlchemy
+import sqlite3
+from datetime import datetime
+
+app = Flask(__name__)
+app.config['DATABASE'] = 'batterie.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///batterie.db'
+db = SQLAlchemy(app)
+
+def get_db():
+    if not hasattr(app, 'db'):
+        app.db = LocalProxy(lambda: sqlite3.connect('data.db'))
+        app.db.row_factory = sqlite3.Row
+    return app.db
+
+class Batterie(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    valeur = db.Column(db.Integer)
+
+    def __init__(self, **kwargs):
+        self.valeur = kwargs.get('valeur')
+
+
+class Ambiant(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    temperature = db.Column('temperature', db.Float)  # Utilisation de db.Float pour stocker la température en flott>
+    humidite = db.Column('humidite', db.Float)  # Utilisation de db.Float pour stocker l'humidité en flottant
+
+    def __init__(self, temperature, humidite):
+        self.temperature = temperature
+        self.humidite = humidite
+
+class Chaussure(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    temperature = db.Column('temperature', db.Float)  # Utilisation de db.Float pour stocker la température en flott>
+    humidite = db.Column('humidite', db.Float)  # Utilisation de db.Float pour stocker l'humidité en flottant
+
+    def __init__(self, temperature, humidite):
+        self.temperature = temperature
+        self.humidite = humidite
+
+class DateClient(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.String(20))
+    heure = db.Column(db.String(20))
+
+with app.app_context():
+    db.create_all()
+
+@app.route("/")
+def entre():
+    return "Bienvenue sur le serveur"
+
+@app.route("/api/date_end")
+def index():
+    return render_template('index.html')
+@app.route("/api/date_end/envoie_stm", methods=['POST', 'GET'])
+def result_form():
+    if request.method == 'POST':
+        date = request.form.get('date')
+        heure = request.form.get('heure')
+
+        # Récupérer l'objet DateClient existant (s'il existe)
+        date_client = DateClient.query.first()
+
+        if date_client:
+            # Mettre à jour la date et l'heure
+            date_client.date = date
+            date_client.heure = heure
+        else:
+            # Créer un nouvel objet DateClient s'il n'existe pas encore
+            date_client = DateClient(date=date, heure=heure)
+            db.session.add(date_client)
+
+        db.session.commit()
+
+    date_client_enr = DateClient.query.first()
+    return render_template('envoie_stm.html', donnees=[date_client_enr])
+
+@app.route("/api/batterie/<int:id>", methods=['GET'])
+def val_bat(id):
+    batterie = Batterie.query.filter_by(id=id).first()
+    valeur = batterie.valeur if batterie else None
+    return jsonify({'valeur': valeur})  # Utilisation de jsonify pour renvoyer les données au format JSON
+
+@app.route("/api/batterie/<int:id>", methods=['POST'])
+def update_batterie(id):
+    batterie = Batterie.query.get(id)
+    if not batterie:
+        batterie = Batterie(id=id, valeur=int(request.json.get('valeur')))  # Conversion en entier
+        db.session.add(batterie)
+    else:
+        batterie.valeur = int(request.json.get('valeur'))  # Conversion en entier
+    db.session.commit()
+    return jsonify({'message': 'valeur mise à jour'})  # Utilisation de jsonify pour renvoyer les données au format >
+
+@app.route("/api/ambiant/temperature", methods=['GET'])
+def val_temp_ambiant():
+    ambiant = Ambiant.query.first()
+    temperature = ambiant.temperature if ambiant else None
+    return jsonify({'temperature en degré': temperature})  # Utilisation de jsonify pour renvoyer les données au for>
+
+@app.route("/api/ambiant/humidite", methods=['GET'])
+def val_humidite_ambiant():
+    ambiant = Ambiant.query.first()
+    humidite = ambiant.humidite if ambiant else None
+    return jsonify({'humidite en pourcentage': humidite})  # Utilisation de jsonify pour renvoyer les données au for>
+
+@app.route("/api/ambiant/temperature", methods=['POST'])
+def update_temperature_ambiant():
+    ambiant = Ambiant.query.first()
+    if not ambiant:
+        ambiant = Ambiant(temperature=float(request.json.get('temperature')))  # Conversion en flottant
+ db.session.add(ambiant)
+    else:
+        ambiant.temperature = float(request.json.get('temperature'))  # Conversion en flottant
+    db.session.commit()
+    return jsonify({'message': 'valeur de temperature mise à jour'})  # Utilisation de jsonify pour renvoyer les don>
+
+@app.route("/api/ambiant/humidite", methods=['POST'])
+def update_humidite_ambiant():
+    ambiant = Ambiant.query.first()
+    if not ambiant:
+        ambiant = Ambiant(humidite=float(request.json.get('humidite')))  # Conversion en flottant
+        db.session.add(ambiant)
+    else:
+        ambiant.humidite = float(request.json.get('humidite'))  # Conversion en flottant
+    db.session.commit()
+    return jsonify({'message': 'valeur de humidite mise à jour'})  # Utilisation de jsonify pour renvoyer les donnée>
+
+@app.route("/api/chaussure/temperature", methods=['GET'])
+def val_temp_chaussure():
+    chaussure = Chaussure.query.first()
+    temperature = chaussure.temperature if chaussure else None
+    return jsonify({'temperature en degré': temperature})  # Utilisation de jsonify pour renvoyer les données au for>
+
+@app.route("/api/chaussure/humidite", methods=['GET'])
+def val_humidite_chaussure():
+    chaussure = Chaussure.query.first()
+    humidite = chaussure.humidite if chaussure else None
+    return jsonify({'humidite en pourcentage': humidite})  # Utilisation de jsonify pour renvoyer les données au for>
+
+@app.route("/api/chaussure/temperature", methods=['POST'])
+def update_temperature_chaussure():
+    chaussure = Chaussure.query.first()
+    if not chaussure:
+        chaussure = Chaussure(temperature=float(request.json.get('temperature')))  # Conversion en flottant
+        db.session.add(chaussure)
+    else:
+        chaussure.temperature = float(request.json.get('temperature'))  # Conversion en flottant
+    db.session.commit()
+    return jsonify({'message': 'valeur de temperature mise à jour'})  # Utilisation de jsonify pour renvoyer les don>
+
+@app.route("/api/chaussure/humidite", methods=['POST'])
+def update_humidite_chaussure():
+    chaussure = Chaussure.query.first()
+    if not chaussure:
+        chaussure = Chaussure(humidite=float(request.json.get('humidite')))  # Conversion en flottant
+        db.session.add(chaussure)
+    else:
+        chaussure.humidite = float(request.json.get('humidite'))  # Conversion en flottant
+    db.session.commit()
+    return jsonify({'message': 'valeur de humidite mise à jour'})  # Utilisation de jsonify pour renvoyer les donnée>
+
+def before_request():
+    db.create_all()
+
+def teardown_request(exception=None):
+    db.session.remove()
+
+if __name__ == "__main__":
+    app.run(host='192.168.1.30', port=5000, debug=True)
+
