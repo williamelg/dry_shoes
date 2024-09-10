@@ -1,0 +1,40 @@
+Le projet avait pour but la réalisation d'un sèche-chaussure de ski électrique.
+Ce projet étant mon premier projet d'école d'ingénieur, il n'a pas été fini. Cependant, une grande partie a pu être réalisée.
+Le cahier des charges du projet était le suivant :
+heures(/240) points(/80)  missions 
+
+[38]	     [16]          Création batterie (interne composée de x piles en parallèles)
+(9)	        (3)         Design batterie (choix BMS, établissement d’un modèle) 
+(15)	      (5)          Dispositif de charge de la batterie (branchement sur secteur)
+(5)  	      (3)          Pack batterie  
+(6)			    (3)		       Communication de l’état de la batterie sur un serveur
+(3) 			  (2)		       Identification des différents packs
+
+[88]	     [24]          Programmation microcontrôleur
+(9)			    (3)		       Prise en main de la STM32 
+(3)			    (1)          Code éteindre/allumer moteur 
+(15)  		  (5)          Code résistance chauffante (intermittence d'arret et allumage de x secondes) 
+(12)	   	  (3)          Calcul PID
+(10)		    (3)		       Code PID (création d'un modele en boucle fermée) 
+(15)		    (3)        Acquisition données : capteur température interne
+(5)			    (1)		     Acquisition données : capteur hygrométrie interne
+(5)			    (1)		     Acquisition données abiantes (température et hygrométrie)
+(14)		    (4)		     Design des trois étages de puissances (moteur résistance et nucleo)
+
+[55]	     [21]           Communication et Affichage
+(14)        (5)          Prise en main Raspberry Pi et Flask 
+(14)   		  (5)          Création du serveur web hébergé sur le Raspberry Pi
+(10)		    (5)          Mise en place d’API entre le serveur et le micro-contrôleur
+(10)		    (3)          Affichage des datas sur la page web (température, humidité, temps restant)
+(7)  		    (3)          Gestion de l'allumage du système à distance
+
+[57]  	     [19]         Réalisation maquette finale
+(12)	  	  (4)        Bilan énergétique 
+(10)		    (3)		     Prise en main du logiciel de 3D
+(20)		    (7) 		   Premier prototype 
+(15)		    (5)		     Deuxième prototype 
+
+Bonus 
+2 points : réactualisation de l’heure du MCU lors d’une connexion au réseau
+4 points : 2e chaussure
+4 points : 2e paire 
