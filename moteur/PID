@@ -1,0 +1,21 @@
+void PID(float temperature)
+{
+
+  uint32_t cooldown_start_time = 0;
+
+  SystemClock_Config();
+  BSP_LED_Init();
+  millis_init();
+
+      if (temperature < TARGET_TEMP - HYSTERESIS) {
+        BSP_LED_On();
+        cooldown_start_time = 0;  // Réinitialiser le temps de refroidissement
+      } else if (temperature > TARGET_TEMP + HYSTERESIS) {
+        // Si le temps de refroidissement est écoulé, éteindre la résistance chauffante
+        if (cooldown_start_time == 0 || (millis() - cooldown_start_time) >= COOLDOWN_TIME) {
+          BSP_LED_Off();
+          cooldown_start_time = millis();  // Enregistrer le début du temps de refroidissement
+        }
+      }
+
+  }
