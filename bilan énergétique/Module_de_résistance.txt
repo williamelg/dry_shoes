@@ -1,0 +1,3 @@
+Après calculs énergétiques : caractéristiques de la résistance chauffante ci-dessous (10W). La taille du tube pas déterminée au moment de la commande, format « passe-partout » mais pas optimal pour le chauffage d’un flux d’air (surface de contact trop faible). 
+Solution : remplir la section chauffante avec des tubes de cuivre (meilleure conductivité thermique) en contact avec la résistance.
+https://fr.rs-online.com/web/p/elements-chauffants/3604100
