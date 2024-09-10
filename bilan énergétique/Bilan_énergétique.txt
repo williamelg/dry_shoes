@@ -1,0 +1,12 @@
+T° :
+	Capacite thermique de l'air (dans la mousse) : Cm = 1030 J/kgK
+	Energie pour passer l'air de 0°C à 35°C : E = Cm.m.DT
+								E = 36 J
+	Energie pour passer la mousse de 0°C à 35°C : E = 13,4kJ
+	Puissance pour y arriver en 3h : 1,24 W
+
+Assèchement : 
+	Energie pour évaporer 80 g d'eau : 180 kJ (2,25 kJ/g)
+	Puissance pour y arriver en 3h : P = 8,33 W
+
+Puissance totale : Pt = 9,57 W
