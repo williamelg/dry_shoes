@@ -1,0 +1,168 @@
+/*
+ * main.c
+ *
+ *  Created on: 18 févr. 2023
+ *      Author: willi
+ */
+
+
+
+#include "stm32f0xx.h"
+#include "bsp.h"
+#include "delay.h"
+#include <math.h>
+#include "main.h"
+#include "batterie.h"
+
+static void SystemClock_Config (void);
+
+
+/*// Main program
+
+int main()
+{
+	uint32_t	i;
+
+	// Configure System Clock
+	SystemClock_Config();
+
+	// Initialize Debug Console
+	BSP_Console_Init();
+	my_printf("Console ready!\r\n");
+
+	// Initialize and start ADC on PC1
+	BSP_ADC_Init();
+	my_printf("ADC ready!\r\n");
+
+	// Main loop
+	while(1)
+	{
+
+		// Wait here until ADC EOC
+		while ((ADC1->ISR & ADC_ISR_EOC) != ADC_ISR_EOC);
+
+		// Report result to console
+
+		float V = (float) ADC1->DR / 4096 * 3.3;
+		int pourcentage = (int)round(((V)/(3".3"))*100);
+		my_printf("adc value = %d\r\n" , ADC1->DR );
+		my_printf("ADC value = %d\r\n", pourcentage);
+
+		// Wait about 200ms
+		for (i=0; i<500000; i++);
+	}
+}*/
+
+// Global variables
+uint8_t		timebase_irq = 0;
+uint16_t	adc_dma_buffer[4];
+
+// Main program
+int main()
+{
+	// Configure System Clock
+	SystemClock_Config();
+
+	// Initialize Console
+	BSP_Console_Init();
+	my_printf("Console Ready!\r\n");
+
+	// Initialize 1s timebase
+	BSP_TIMER_Timebase_Init();
+	BSP_NVIC_Init();
+
+	// Initialize ADC with DMA
+	BSP_ADC_Init();
+
+	float voltage[4];
+
+	// Main loop
+	while(1)
+	{
+		// Do every 1s
+		if(timebase_irq == 1)
+		{
+
+			ADC_DMA_BAT(adc_dma_buffer, voltage);
+			int probleme = BLOC_CHANGE(voltage);
+			if (probleme == 1){
+				return 0;
+			}
+			timebase_irq = 0;
+		}
+
+	}
+}
+
+static void SystemClock_Config()
+{
+	uint32_t	HSE_Status;
+	uint32_t	PLL_Status;
+	uint32_t	SW_Status;
+	uint32_t	timeout = 0;
+
+	timeout = 1000000;
+
+	// Start HSE in Bypass Mode
+	RCC->CR |= RCC_CR_HSEBYP;
+	RCC->CR |= RCC_CR_HSEON;
+
+	// Wait until HSE is ready
+	do
+	{
+		HSE_Status = RCC->CR & RCC_CR_HSERDY_Msk;
+		timeout--;
+	} while ((HSE_Status == 0) && (timeout > 0));
+
+	// Select HSE as PLL input source
+	RCC->CFGR &= ~RCC_CFGR_PLLSRC_Msk;
+	RCC->CFGR |= (0x02 <<RCC_CFGR_PLLSRC_Pos);
+
+	// Set PLL PREDIV to /1
+	RCC->CFGR2 = 0x00000000;
+
+	// Set PLL MUL to x6
+	RCC->CFGR &= ~RCC_CFGR_PLLMUL_Msk;
+	RCC->CFGR |= (0x04 <<RCC_CFGR_PLLMUL_Pos);
+
+	// Enable the main PLL
+	RCC-> CR |= RCC_CR_PLLON;
+
+	// Wait until PLL is ready
+	do
+	{
+		PLL_Status = RCC->CR & RCC_CR_PLLRDY_Msk;
+		timeout--;
+	} while ((PLL_Status == 0) && (timeout > 0));
+
+	// Set AHB prescaler to /1
+	RCC->CFGR &= ~RCC_CFGR_HPRE_Msk;
+	RCC->CFGR |= RCC_CFGR_HPRE_DIV1;
+
+	//Set APB1 prescaler to /1
+	RCC->CFGR &= ~RCC_CFGR_PPRE_Msk;
+	RCC->CFGR |= RCC_CFGR_PPRE_DIV1;
+
+	// Enable FLASH Prefetch Buffer and set Flash Latency
+	FLASH->ACR = FLASH_ACR_PRFTBE | FLASH_ACR_LATENCY;
+
+	/* --- Until this point, MCU was still clocked by HSI at 8MHz ---*/
+	/* --- Switching to PLL at 48MHz Now!  Fasten your seat belt! ---*/
+
+	// Select the main PLL as system clock source
+	RCC->CFGR &= ~RCC_CFGR_SW;
+	RCC->CFGR |= RCC_CFGR_SW_PLL;
+
+	// Wait until PLL becomes main switch input
+	do
+	{
+		SW_Status = (RCC->CFGR & RCC_CFGR_SWS_Msk);
+		timeout--;
+	} while ((SW_Status != RCC_CFGR_SWS_PLL) && (timeout > 0));
+
+
+
+	// Update SystemCoreClock global variable
+	SystemCoreClockUpdate();
+}
+
